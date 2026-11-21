@@ -1,21 +1,31 @@
-# AI Virtual Mouse
+# AI Virtual Mouse 2.0
 
-AI Virtual Mouse is a Python computer-vision project that controls the Windows mouse using hand gestures captured through a webcam. It uses MediaPipe Hand Landmarker for real-time hand tracking, OpenCV for the camera and visual interface, and PyAutoGUI for cursor and click automation.
+AI Virtual Mouse 2.0 is a hands-free Windows desktop controller that uses real-time hand gesture recognition through a webcam. It extends the original virtual mouse with drag-and-drop, volume control, screenshots, Copilot launching, window switching, media controls, and adaptive cursor movement.
+
+The project uses MediaPipe Hand Landmarker for tracking, OpenCV for the camera preview and on-screen HUD, and PyAutoGUI for Windows mouse and keyboard automation.
 
 The application is optimized for a webcam resolution of 640x480 and moves the cursor based on the position of the index finger.
 
 ## Features
 
-- Real-time hand and finger tracking
-- Smooth cursor movement
-- Left-click gesture
+- Real-time 21-point hand and finger tracking
+- Adaptive, smoothed cursor movement
+- Left-click and drag-and-drop gestures
 - Right-click gesture
-- Vertical scrolling gesture
-- Hysteresis-based pinch detection to reduce accidental repeated clicks
+- Vertical scrolling
+- Four-finger open-palm volume control
+- Double-click gesture
+- Screenshot capture
+- Microsoft Copilot launcher
+- Alt+Tab window switching
+- Play/pause media control
+- Hold timers and action cooldowns to prevent accidental repeated actions
+- Hysteresis-based pinch detection
+- Live FPS and gesture status HUD
 - PyAutoGUI failsafe protection
 - Webcam preview with hand landmarks and the current gesture mode
 - Automatic MediaPipe model download on first launch
-- Emergency stop by moving the mouse to a screen corner
+- Emergency stop by moving the mouse to the top-left screen corner
 - Press `Q` to close the application
 
 ## Gesture Controls
@@ -23,12 +33,32 @@ The application is optimized for a webcam resolution of 640x480 and moves the cu
 | Gesture | Action |
 |---|---|
 | Raise only the index finger | Move the mouse cursor |
-| Pinch the thumb and index finger | Left click |
+| Pinch the thumb and index finger | Hold and move to drag; release to click/drop |
 | Pinch the thumb and middle finger | Right click |
-| Raise both index and middle fingers | Scroll |
+| Raise the index and middle fingers | Scroll vertically |
+| Open all four fingers | Move the hand up or down to adjust system volume |
+| Hold thumbs up | Open Microsoft Copilot |
+| Hold only the ring finger up | Double click |
+| Hold only the little finger up | Take a screenshot |
+| Hold index, middle, and ring fingers up | Switch window with Alt+Tab |
+| Hold index and little fingers up | Play or pause media |
 | Make no recognized gesture | Idle |
 
-The pinch gestures are detected with separate release thresholds, so the hand must open a little before the gesture can be triggered again.
+Extended gestures must be held for approximately 0.65 seconds before activation. Action cooldowns prevent immediate repeated commands. Pinch gestures use separate press and release thresholds, so the hand must open enough before the pinch can trigger again.
+
+## Saved Screenshots
+
+Screenshots are automatically saved in the following project folder:
+
+```text
+Screenshots/
+```
+
+Each screenshot uses a timestamped filename such as:
+
+```text
+screenshot_20261121_110000.png
+```
 
 ## Technologies Used
 
@@ -42,9 +72,10 @@ The pinch gestures are detected with separate release thresholds, so the hand mu
 
 ```text
 AI-Virtual-Mouse/
-|-- main.py                 # Application logic and gesture recognition
+|-- main.py                 # 2.0 application logic and gesture recognition
 |-- requirements.txt        # Python dependencies
 |-- hand_landmarker.task    # MediaPipe hand-landmarker model
+|-- Screenshots/            # Generated screenshot images
 |-- README.md               # Project documentation
 `-- .venv/                  # Optional local virtual environment
 ```
@@ -118,7 +149,7 @@ pyautogui>=0.9.54,<1
 numpy>=1.26,<3
 ```
 
-## Run the Project
+## Run AI Virtual Mouse 2.0
 
 After activating the virtual environment:
 
@@ -131,8 +162,9 @@ The application will:
 1. Download the MediaPipe model if it is not already present.
 2. Open the webcam.
 3. Start detecting a maximum of one hand.
-4. Open a window titled **AI Virtual Mouse**.
-5. Begin moving the cursor and applying gestures.
+4. Open a window titled **AI Virtual Mouse 2.0**.
+5. Display the current gesture mode, FPS, and gesture hint.
+6. Begin moving the cursor and applying gestures.
 
 Keep the camera window in view and press `Q` to stop the application.
 
@@ -143,9 +175,11 @@ Keep the camera window in view and press `Q` to stop the application.
 3. MediaPipe detects 21 hand landmarks.
 4. The application compares landmark positions to determine which fingers are raised.
 5. Thumb-index and thumb-middle distances detect pinch gestures.
-6. The index-finger position is mapped to the screen dimensions.
-7. Cursor movement is smoothed before PyAutoGUI moves the mouse.
-8. OpenCV overlays the hand landmarks and current mode on the camera preview.
+6. Raised finger combinations select scroll, volume, Copilot, screenshot, and media actions.
+7. The index-finger position is mapped to the screen dimensions.
+8. Cursor movement uses adaptive smoothing before PyAutoGUI moves the mouse.
+9. Hold gestures run a 0.65-second confirmation timer and share action cooldown protection.
+10. OpenCV overlays the hand landmarks, status, FPS, and gesture hint on the camera preview.
 
 ## Configuration
 
@@ -155,22 +189,41 @@ The following settings can be changed near the top of `main.py`:
 CAMERA_INDEX = 0
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
-SMOOTHING = 0.25
+
+BASE_SMOOTHING = 0.25
+MIN_SMOOTHING = 0.25
+MAX_SMOOTHING = 0.75
+
 PINCH_THRESHOLD = 0.055
 RELEASE_THRESHOLD = 0.085
 CLICK_COOLDOWN = 0.45
+
 SCROLL_SENSITIVITY = 0.015
+MAX_SCROLL_STEPS = 5
+
+GESTURE_HOLD_SECONDS = 0.65
+ACTION_COOLDOWN = 1.2
+VOLUME_STEP_COOLDOWN = 0.16
+VOLUME_MOVEMENT_THRESHOLD = 0.025
+
+COPILOT_URI = "ms-copilot:"
 ```
 
 Configuration guidance:
 
 - `CAMERA_INDEX`: Change this if the wrong camera is selected.
 - `FRAME_WIDTH` and `FRAME_HEIGHT`: Adjust the webcam frame resolution.
-- `SMOOTHING`: Lower values produce smoother movement but increase delay.
+- `BASE_SMOOTHING`, `MIN_SMOOTHING`, and `MAX_SMOOTHING`: Control adaptive cursor movement smoothing.
 - `PINCH_THRESHOLD`: Lower values require a tighter pinch.
 - `RELEASE_THRESHOLD`: Controls how far the fingers must separate to release a pinch.
 - `CLICK_COOLDOWN`: Minimum time between generated clicks.
-- `SCROLL_SENSITIVITY`: Lower values make scrolling more sensitive.
+- `SCROLL_SENSITIVITY`: Lower values make vertical scrolling more sensitive.
+- `MAX_SCROLL_STEPS`: Maximum number of scroll steps generated per movement.
+- `GESTURE_HOLD_SECONDS`: Required hold time for advanced gestures.
+- `ACTION_COOLDOWN`: Minimum time between repeated advanced actions.
+- `VOLUME_STEP_COOLDOWN`: Minimum interval between volume adjustments.
+- `VOLUME_MOVEMENT_THRESHOLD`: Minimum palm movement required for a volume step.
+- `COPILOT_URI`: Windows URI used to launch the installed Copilot desktop application.
 
 ## Troubleshooting
 
@@ -204,6 +257,18 @@ Run the terminal with normal desktop user permissions. Security software or rest
 - Avoid complex or high-motion backgrounds.
 - Move your hand slowly while testing.
 
+### Copilot does not open
+
+Make sure the Microsoft Copilot desktop app is installed and that the `ms-copilot:` URI is registered by Windows. The application cannot launch Copilot through this URI if it is not registered.
+
+### Screenshots are not saved
+
+Verify that the project directory is writable. The application creates a `Screenshots` folder automatically when the little-finger gesture is first triggered.
+
+### The volume does not change
+
+Use the open-palm gesture and move your hand clearly up or down. Windows system audio controls must be available, and another application must not be overriding or locking audio keys.
+
 ### PowerShell activation is blocked
 
 Run:
@@ -216,7 +281,7 @@ Then activate the virtual environment for that terminal session.
 
 ## Safety
 
-PyAutoGUI is configured with a failsafe. Move the mouse to any screen corner to stop a run immediately if the cursor becomes difficult to control.
+PyAutoGUI is configured with a failsafe. Move the mouse to the top-left screen corner to stop a run immediately if the cursor becomes difficult to control.
 
 The application processes webcam frames locally and does not upload them to a server.
 
